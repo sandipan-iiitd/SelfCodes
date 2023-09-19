@@ -1,0 +1,69 @@
+import pandas as pd
+import datetime as dt     
+date = dt.date.today
+df_sfx_sheet1=pd.read_excel('sfx.xls',sheet_name='Sheet1').rename(columns={'SFX_FT':'SFX'})
+df_sfx_sheet2=pd.read_excel('sfx.xls',sheet_name='Sheet2').rename(columns={'SFX_STD':'SFX'})
+df_sfx_1=df_sfx_sheet1.melt(id_vars=["SFX"], var_name="Date", value_name="Value")
+df_sfx_2=df_sfx_sheet2.melt(id_vars=["SFX"], var_name="Date", value_name="Value")
+
+def TVP():
+    #Reading the sfx,mfn and infc files
+    df_infc_sheet1=pd.read_excel(r'C:\Users\dsandpa\Desktop\input_file\infc.xls',sheet_name='Sheet1').rename(columns={'INFC_STD':'INFC'})
+    df_infc_sheet2=pd.read_excel(r'C:\Users\dsandpa\Desktop\input_file\infc.xls',sheet_name='Sheet2').rename(columns={'INFC_PANTRY':'INFC'})
+    df_infc_sheet3=pd.read_excel(r'C:\Users\dsandpa\Desktop\input_file\infc.xls',sheet_name='Sheet3').rename(columns={'INFC_FT':'INFC'})
+    df_sfx_sheet1=pd.read_excel(r'C:\Users\dsandpa\Desktop\input_file\sfx.xls',sheet_name='Sheet1').rename(columns={'SFX_FT':'SFX'})
+    df_sfx_sheet2=pd.read_excel(r'C:\Users\dsandpa\Desktop\input_file\sfx.xls',sheet_name='Sheet2').rename(columns={'SFX_STD':'SFX'})
+    df_mfn_sheet1=pd.read_excel(r'C:\Users\dsandpa\Desktop\input_file\mfn.xls',sheet_name='Sheet1').rename(columns={'MFN_STD':'MFN'})
+    df_mfn_sheet2=pd.read_excel(r'C:\Users\dsandpa\Desktop\input_file\mfn.xls',sheet_name='Sheet2').rename(columns={'MFN_FT':'MFN'})
+    
+    #Transposing dates from columns to rows 
+    df_infc_1=df_infc_sheet1.melt(id_vars=["INFC"], var_name="Date", value_name="Value")
+    df_infc_2=df_infc_sheet2.melt(id_vars=["INFC"], var_name="Date", value_name="Value")
+    df_infc_3=df_infc_sheet3.melt(id_vars=["INFC"], var_name="Date", value_name="Value")
+    df_sfx_1=df_sfx_sheet1.melt(id_vars=["SFX"], var_name="Date", value_name="Value")
+    df_sfx_2=df_sfx_sheet2.melt(id_vars=["SFX"], var_name="Date", value_name="Value")
+    df_mfn_1=df_mfn_sheet1.melt(id_vars=["MFN"], var_name="Date", value_name="Value")
+    df_mfn_2=df_mfn_sheet2.melt(id_vars=["MFN"], var_name="Date", value_name="Value")
+    
+    df_infc_1['Type']='INFC'
+    df_infc_2['Type']='INFC'
+    df_infc_3['Type']='INFC'
+    df_sfx_1['Type']='SFX'
+    df_sfx_2['Type']='SFX'
+    df_mfn_1['Type']='MFN'
+    df_mfn_2['Type']='MFN'
+    
+    #Getting the infc,sfx,and mfn files in the required format
+    df_infc=pd.concat([df_infc_1,df_infc_2,df_infc_3]).rename(columns={'INFC':'Warehouse','Date':'Slam_Date','Value':'Units'})
+    df_sfx=pd.concat([df_sfx_1,df_sfx_2]).rename(columns={'SFX':'Warehouse','Date':'Slam_Date','Value':'Units'})
+    df_mfn=pd.concat([df_mfn_1,df_mfn_2]).rename(columns={'MFN':'Warehouse','Date':'Slam_Date','Value':'Units'})
+    
+    df=pd.concat([df_infc,df_sfx,df_mfn])
+    df['Upload_date']=pd.to_datetime('today').normalize()
+    return df
+
+
+#Creating an object of the driver function
+b=TVP()
+
+
+#Asking for the start date
+x=input('Enter the start date in YYYY-MM-DD format:')
+
+
+#Asking for the end date
+y=input('Enter the end date in YYYY-MM-DD format:')
+
+
+#Filtering on the dates entered and then grouping by warehouse and slam date 
+TVP_df=b.set_index('Slam_Date').loc[x:y].pivot_table(index=['Warehouse','Slam_Date','Type','Upload_date'],values="Units",aggfunc=np.sum).reset_index()
+
+
+# Create a Pandas Excel writer using XlsxWriter as the engine.
+writer = pd.ExcelWriter(r'C:\Users\dsandpa\Desktop\input_file\IN_unit_demandoverride.xlsx', engine='xlsxwriter')
+
+# Write each dataframe to a different worksheet. you could write different string like above if you want
+TVP_df.to_excel(writer, sheet_name='Sheet1',index=False)
+
+# Close the Pandas Excel writer and output the Excel file.
+writer.save()
